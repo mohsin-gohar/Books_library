@@ -1,0 +1,7 @@
+{
+  "name": "Athenaeum Library",
+  "description": "A minimalist, premium online book library with real-time search, category filtering, detailed book pages, reader excerpts, favorites, and dark/light modes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
