@@ -92,6 +92,9 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reader-title"
       className="fixed inset-0 z-50 overflow-y-auto bg-stone-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 md:p-6 animate-fadeIn"
       onClick={onClose}
     >
@@ -106,7 +109,7 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
               Athenaeum Reading Room
             </span>
             <span className="opacity-30">·</span>
-            <span className="text-xs font-serif italic truncate max-w-[200px] sm:max-w-xs">
+            <span id="reader-title" className="text-xs font-serif italic truncate max-w-[200px] sm:max-w-xs">
               {book.title}
             </span>
             {currentStatus && (
