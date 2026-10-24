@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, Suspense, lazy } from 'react';
+import React, { useRef, useEffect, useState, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
@@ -10,6 +10,7 @@ import { Navbar } from './components/Navbar';
 import { HeroFeatured } from './components/HeroFeatured';
 import { FilterBar } from './components/FilterBar';
 import { BookGrid } from './components/BookGrid';
+import { CommandPalette } from './components/CommandPalette';
 import { Toast } from './components/Toast';
 import { Footer } from './components/Footer';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -87,31 +88,23 @@ function MainApp() {
     setSortBy('featured');
   };
 
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
   const handleOpenSearch = () => {
-    if (route.name !== 'catalog') {
-      navigate({ name: 'catalog' });
-    }
-    // smooth scroll to filter area and focus
-    setTimeout(() => {
-      const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
-      if (searchInput) {
-        searchInput.focus();
-        searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 150);
+    setIsCommandPaletteOpen(true);
   };
 
-  // Keyboard shortcut: Cmd/Ctrl+K opens search
+  // Keyboard shortcut: Cmd/Ctrl+K opens command palette
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        handleOpenSearch();
+        setIsCommandPaletteOpen((prev) => !prev);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [route.name]);
+  }, []);
 
   const routeKey =
     route.name === 'book-detail' || route.name === 'reader'
@@ -309,6 +302,15 @@ function MainApp() {
 
       {/* Floating Toast Feedback Notification */}
       <Toast />
+
+      {/* Spotlight Command Palette Modal */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigate={navigate}
+        onSelectBook={handleSelectBook}
+        onStartReading={handleStartReading}
+      />
 
       {/* Back to top */}
       <BackToTop />

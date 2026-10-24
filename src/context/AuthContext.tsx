@@ -57,7 +57,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const stored = localStorage.getItem(SESSION_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as AuthUser;
-        if (parsed && typeof parsed.id === 'string' && typeof parsed.email === 'string') return parsed;
+        if (parsed && typeof parsed.id === 'string' && typeof parsed.email === 'string') {
+          // Validate session user exists in the users table (prevent tampering)
+          const storedUsers = localStorage.getItem(STORAGE_KEY);
+          if (storedUsers) {
+            try {
+              const usersList = JSON.parse(storedUsers) as StoredUser[];
+              if (Array.isArray(usersList) && usersList.some((u) => u.id === parsed.id && u.email === parsed.email)) {
+                return parsed;
+              }
+            } catch { /* ignore */ }
+          }
+        }
       }
     } catch { /* ignore */ }
     return null;
@@ -85,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = useCallback((name: string, email: string, password: string) => {
     if (users.some((u) => u.email.toLowerCase() === email.toLowerCase())) return false;
     const newUser: StoredUser = {
-      id: `user-${Date.now()}`,
+      id: `user-${crypto.randomUUID()}`,
       name: name.trim() || 'Reader',
       email: email.trim(),
       password,

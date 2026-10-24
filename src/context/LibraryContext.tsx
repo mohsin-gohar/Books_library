@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Book,
   BookCategory,
@@ -64,6 +64,39 @@ interface LibraryContextType {
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
 const CATALOG_VERSION = 'v4_real_covers';
 
+// Validate a persisted book against the expected schema to prevent crashes
+// from malformed localStorage data. Returns null if the book is invalid.
+function validatePersistedBook(b: unknown): Book | null {
+  if (!b || typeof b !== 'object') return null;
+  const book = b as Record<string, unknown>;
+  const requiredStringFields = ['id', 'title', 'subtitle', 'author', 'authorBio', 'category', 'isbn', 'language',
+    'coverImage', 'summary', 'quote', 'publisher'];
+  for (const field of requiredStringFields) {
+    if (typeof book[field] !== 'string') return null;
+  }
+  // Optional string fields - only validate if present
+  if (book.quoteAttribution !== undefined && typeof book.quoteAttribution !== 'string') return null;
+  if (book.edition !== undefined && typeof book.edition !== 'string') return null;
+  if (typeof book.rating !== 'number' || typeof book.ratingCount !== 'number') return null;
+  if (typeof book.pages !== 'number' || typeof book.publishedYear !== 'number') return null;
+  if (typeof book.readTimeHours !== 'number') return null;
+  if (!Array.isArray(book.tags) || !book.tags.every((t) => typeof t === 'string')) return null;
+  if (!Array.isArray(book.reviews) || !book.reviews.every((r) =>
+    r && typeof r === 'object' &&
+    typeof (r as Record<string, unknown>).id === 'string' &&
+    typeof (r as Record<string, unknown>).author === 'string' &&
+    typeof (r as Record<string, unknown>).content === 'string' &&
+    typeof (r as Record<string, unknown>).rating === 'number'
+  )) return null;
+  if (!book.sampleExcerpt || typeof book.sampleExcerpt !== 'object') return null;
+  const excerpt = book.sampleExcerpt as Record<string, unknown>;
+  if (typeof excerpt.chapterTitle !== 'string' || !Array.isArray(excerpt.paragraphs) ||
+    !excerpt.paragraphs.every((p) => typeof p === 'string')) return null;
+  if (!Array.isArray(book.tableOfContents) || !book.tableOfContents.every((t) => typeof t === 'string')) return null;
+  if (book.featured !== undefined && typeof book.featured !== 'boolean') return null;
+  return book as unknown as Book;
+}
+
 export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [books, setBooks] = useState<Book[]>(() => {
     try {
@@ -71,18 +104,26 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (version === CATALOG_VERSION) {
         const stored = localStorage.getItem('athenaeum_books');
         if (stored) {
-          const parsed = JSON.parse(stored) as Book[];
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const seen = new Set<string>();
-            const unique = parsed.filter((b) => {
-              if (!b || !b.id || seen.has(b.id)) return false;
-              seen.add(b.id);
-              return true;
-            });
-            if (unique.length > 0) return unique;
+          try {
+            const parsed = JSON.parse(stored) as unknown[];
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const seen = new Set<string>();
+              const valid: Book[] = [];
+              for (const b of parsed) {
+                const validated = validatePersistedBook(b);
+                if (validated && validated.id && !seen.has(validated.id)) {
+                  seen.add(validated.id);
+                  valid.push(validated);
+                }
+              }
+              if (valid.length > 0) return valid;
+            }
+          } catch {
+            // ignore malformed JSON
           }
         }
       } else {
+        localStorage.removeItem('athenaeum_books');
         localStorage.setItem('athenaeum_catalog_version', CATALOG_VERSION);
       }
     } catch {
@@ -215,14 +256,17 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
 
-  // Initialize favorites from localStorage
+  // Initialize favorites from localStorage, validating against existing books
   const [favoriteIds, setFavoriteIds] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem('athenaeum_favorites');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          return parsed.map((id: string) => (id === 'form-and-void' ? 'form-void' : id));
+          const migrated = parsed.map((id: unknown) =>
+            typeof id === 'string' ? (id === 'form-and-void' ? 'form-void' : id) : null
+          ).filter(Boolean) as string[];
+          if (migrated.length > 0) return migrated;
         }
       }
       return ['form-void', 'meditations-on-time', 'the-zen-garden', 'celestial-mechanics'];
@@ -241,7 +285,17 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
           const migrated: Record<string, ReadingProgress> = {};
           for (const [key, value] of Object.entries(parsed)) {
             const newKey = key === 'form-and-void' ? 'form-void' : key;
-            migrated[newKey] = value && typeof value === 'object' ? { ...(value as ReadingProgress), bookId: newKey } : (value as ReadingProgress);
+            if (value && typeof value === 'object') {
+              const v = value as Record<string, unknown>;
+              migrated[newKey] = {
+                ...(value as ReadingProgress),
+                bookId: newKey,
+                status: (typeof v.status === 'string' ? v.status : 'want-to-read') as ReadingStatus,
+                currentPage: (typeof v.currentPage === 'number' ? v.currentPage : 0) as number,
+                totalPages: (typeof v.totalPages === 'number' ? v.totalPages : 300) as number,
+                lastReadDate: (typeof v.lastReadDate === 'string' ? v.lastReadDate : 'Just now') as string,
+              };
+            }
           }
           return migrated;
         }
@@ -319,11 +373,34 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setViewModeState(mode);
   };
 
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean up pending toast timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
   const showToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setActiveToast(msg);
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setActiveToast((current) => (current === msg ? null : current));
+      toastTimerRef.current = null;
     }, 2800);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
   }, []);
 
   const dismissToast = useCallback(() => {
@@ -410,7 +487,7 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         prev.map((book) => {
           if (book.id !== bookId) return book;
           const newReview = {
-            id: `rev-${Date.now()}`,
+            id: `rev-${crypto.randomUUID()}`,
             author: author.trim() || 'Reader',
             role: role.trim() || 'Reader',
             rating,
@@ -453,23 +530,24 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     showToast('Book updated successfully.');
   }, [showToast]);
 
-  const importBooks = useCallback((newBooks: Book[]) => {
-    let countAdded = 0;
+  const importBooks = useCallback((newBooks: Book[]): number => {
+    const existingIds = new Set(books.map((b) => b.id));
+    const existingIsbns = new Set(books.map((b) => b.isbn).filter(Boolean));
+    const filtered = newBooks.filter((b) => !existingIds.has(b.id) && (!b.isbn || !existingIsbns.has(b.isbn)));
+    const countAdded = filtered.length;
+
     setBooks((prev) => {
-      const existingIds = new Set(prev.map((b) => b.id));
-      const existingIsbns = new Set(prev.map((b) => b.isbn).filter(Boolean));
-      const filtered = newBooks.filter((b) => !existingIds.has(b.id) && (!b.isbn || !existingIsbns.has(b.isbn)));
-      countAdded = filtered.length;
       if (countAdded === 0) return prev;
       return [...filtered, ...prev];
     });
+
     if (countAdded > 0) {
       showToast(`Imported ${countAdded} volumes into the Athenaeum catalog.`);
     } else {
       showToast('All volumes are already present in the catalog.');
     }
     return countAdded;
-  }, [showToast]);
+  }, [books, showToast]);
 
   const deleteBook = useCallback((bookId: string) => {
     setBooks((prev) => prev.filter((b) => b.id !== bookId));
@@ -488,7 +566,9 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const resetCatalog = useCallback(() => {
     setBooks(BOOKS_DATA);
     try {
-      localStorage.removeItem('athenaeum_custom_catalog');
+      localStorage.removeItem('athenaeum_books');
+      localStorage.removeItem('athenaeum_catalog_version');
+      localStorage.setItem('athenaeum_catalog_version', CATALOG_VERSION);
     } catch { /* ignore */ }
     showToast('Catalog restored to default archival collection.');
   }, [showToast]);

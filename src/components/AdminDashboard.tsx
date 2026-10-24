@@ -263,7 +263,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit, onSelect
       const slugId =
         bookForm.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') +
         '-' +
-        Date.now().toString(36);
+        crypto.randomUUID();
       addBook({ id: slugId, ...bookForm });
     }
     closeBookModal();

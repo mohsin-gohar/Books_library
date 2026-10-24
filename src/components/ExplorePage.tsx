@@ -77,7 +77,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 text-center space-y-6">
           <div className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-amber-300 font-medium">
             <Compass className="w-3.5 h-3.5" />
-            <span>Archive Exploration · 200 Preserved Works</span>
+            <span>Archive Exploration · {books.length}+ Preserved Works</span>
           </div>
 
           <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-stone-50 leading-tight">
@@ -127,7 +127,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
               onClick={() => onNavigate({ name: 'catalog' })}
               className="text-xs sm:text-sm font-medium text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors inline-flex items-center gap-1 cursor-pointer"
             >
-              <span>View all 200 volumes</span>
+              <span>View all {books.length} volumes</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>

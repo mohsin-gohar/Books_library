@@ -70,15 +70,15 @@ export const CurationsPage: React.FC<CurationsPageProps> = ({
     <div className="py-8 md:py-12 max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 animate-fadeIn space-y-16">
       {/* Header */}
       <div className="border-b border-stone-200/80 dark:border-stone-800/80 pb-6">
-        <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-stone-500 dark:text-stone-400 font-medium mb-1">
+        <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-amber-700 dark:text-amber-400 font-medium mb-1">
           <Compass className="w-3.5 h-3.5" />
-          <span>Curatorial Pathways · 200 Preserved Works</span>
+          <span>Curatorial Pathways · {books.length}+ Preserved Works</span>
         </div>
         <h1 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900 dark:text-stone-50 tracking-tight">
           Curated Thematic Pathways
         </h1>
         <p className="text-sm sm:text-base text-stone-600 dark:text-stone-400 font-serif italic mt-1 max-w-2xl">
-          Carefully sequenced syllabi designed for slow reading and cross-disciplinary study, assembled from our 200-volume repository.
+          Carefully sequenced syllabi designed for slow reading and cross-disciplinary study, assembled from our {books.length}-volume repository.
         </p>
       </div>
 

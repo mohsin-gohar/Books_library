@@ -19,7 +19,12 @@ import {
   Truck,
   X,
   Package,
-  ShieldCheck
+  ShieldCheck,
+  Volume2,
+  VolumeX,
+  Copy,
+  Sparkles,
+  Quote
 } from 'lucide-react';
 
 interface BookDetailPageProps {
@@ -66,6 +71,89 @@ export const BookDetailPage: React.FC<BookDetailPageProps> = ({
   const [orderQty, setOrderQty] = useState(1);
   const [orderSuccess, setOrderSuccess] = useState(false);
 
+  // Speech Narration State
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [speechAvailable, setSpeechAvailable] = useState(false);
+
+  // Citation Generator State
+  const [showCitation, setShowCitation] = useState(false);
+  const [citationFormat, setCitationFormat] = useState<'mla' | 'apa' | 'chicago' | 'bibtex'>('mla');
+  const [copiedCitation, setCopiedCitation] = useState(false);
+
+  // 3D Cover Tilt State
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    setSpeechAvailable(typeof window !== 'undefined' && 'speechSynthesis' in window);
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [book.id]);
+
+  const handleToggleSpeech = () => {
+    if (!('speechSynthesis' in window)) return;
+    if (isPlayingAudio) {
+      window.speechSynthesis.cancel();
+      setIsPlayingAudio(false);
+    } else {
+      window.speechSynthesis.cancel();
+      const textToSpeak = `${book.title}. By ${book.author}. ${book.quote}. ${book.sampleExcerpt.paragraphs?.[0] || book.summary}`;
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      utterance.rate = 0.92;
+      utterance.pitch = 1.0;
+      utterance.onend = () => setIsPlayingAudio(false);
+      utterance.onerror = () => setIsPlayingAudio(false);
+      window.speechSynthesis.speak(utterance);
+      setIsPlayingAudio(true);
+      showToast('Audio narration started');
+    }
+  };
+
+  const getCitationText = () => {
+    const pub = book.publisher || 'Athenaeum Press';
+    const yr = book.publishedYear;
+    switch (citationFormat) {
+      case 'mla':
+        return `${book.author}. ${book.title}: ${book.subtitle}. ${pub}, ${yr}.`;
+      case 'apa':
+        return `${book.author}. (${yr}). ${book.title}: ${book.subtitle}. ${pub}.`;
+      case 'chicago':
+        return `${book.author}. ${yr}. ${book.title}: ${book.subtitle}. ${pub}.`;
+      case 'bibtex':
+        return `@book{${book.id.replace(/[^a-zA-Z0-9]/g, '_')}_${yr},
+  author = {${book.author}},
+  title = {${book.title}: ${book.subtitle}},
+  year = {${yr}},
+  publisher = {${pub}},
+  isbn = {${book.isbn}}
+}`;
+    }
+  };
+
+  const handleCopyCitation = () => {
+    try {
+      navigator.clipboard.writeText(getCitationText());
+      setCopiedCitation(true);
+      showToast(`Copied ${citationFormat.toUpperCase()} citation`);
+      setTimeout(() => setCopiedCitation(false), 2000);
+    } catch {
+      showToast('Unable to copy citation');
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    setTilt({ x: x * 15, y: -y * 15 });
+  };
+
+  const handleMouseLeave = () => {
+    setTilt({ x: 0, y: 0 });
+  };
+
   // Private study note state
   const [noteText, setNoteText] = useState('');
   const [noteSaved, setNoteSaved] = useState(false);
@@ -81,6 +169,7 @@ export const BookDetailPage: React.FC<BookDetailPageProps> = ({
   };
 
   const handleShare = () => {
+    if (!navigator.clipboard) return;
     try {
       navigator.clipboard.writeText(window.location.href);
       setCopiedLink(true);
@@ -91,7 +180,8 @@ export const BookDetailPage: React.FC<BookDetailPageProps> = ({
   };
 
   const handleDownloadExcerpt = () => {
-    const textContent = `${book.title.toUpperCase()}
+    try {
+      const textContent = `${book.title.toUpperCase()}
 By ${book.author}
 Category: ${book.category}
 ISBN: ${book.isbn}
@@ -104,17 +194,24 @@ ${book.sampleExcerpt.paragraphs.join('\n\n')}
 ---
 Preserved by Athenaeum Library Repository`;
 
-    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${book.id}-excerpt.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
+      const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${book.id}-excerpt.txt`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      showToast('Could not download excerpt.');
+    }
   };
 
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      showToast('Please sign in to publish a reflection.');
+      return;
+    }
     if (!reviewContent.trim()) return;
     addReview(
       book.id,
@@ -180,7 +277,15 @@ Preserved by Athenaeum Library Repository`;
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
         {/* Left Column: Cover, Reading Status, Technical Specs & Study Notes */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="max-w-sm mx-auto lg:max-w-none">
+          <div
+            className="max-w-sm mx-auto lg:max-w-none transition-transform duration-200 ease-out will-change-transform cursor-pointer"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            style={{
+              perspective: '1000px',
+              transform: `perspective(1000px) rotateX(${tilt.y}deg) rotateY(${tilt.x}deg)`
+            }}
+          >
             <BookCover
               coverImage={book.coverImage}
               title={book.title}
@@ -199,6 +304,21 @@ Preserved by Athenaeum Library Repository`;
               <BookOpen className="w-4 h-4" />
               <span>Read Sample Excerpt</span>
             </button>
+
+            {speechAvailable && (
+              <button
+                onClick={handleToggleSpeech}
+                className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
+                  isPlayingAudio
+                    ? 'bg-amber-600 text-white border-amber-600 animate-pulse'
+                    : 'bg-stone-100 hover:bg-stone-200 dark:bg-stone-800/80 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 border-stone-300/70 dark:border-stone-700'
+                }`}
+                title="Contemplative Audio Narration"
+              >
+                {isPlayingAudio ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                <span>{isPlayingAudio ? 'Pause Scholarly Audio Narration' : 'Listen to Folio Audio Narration'}</span>
+              </button>
+            )}
 
             <div className="flex items-center gap-2">
               <button
@@ -393,6 +513,48 @@ Preserved by Athenaeum Library Repository`;
                 </li>
               ))}
             </ol>
+          </div>
+
+          {/* Scholarly Citation Box */}
+          <div className="p-5 rounded-xl bg-stone-100/70 dark:bg-stone-900/60 border border-stone-200/90 dark:border-stone-800/90 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Quote className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+                <h3 className="text-xs uppercase tracking-wider font-semibold text-stone-700 dark:text-stone-300">
+                  Scholarly Citation Specimen
+                </h3>
+              </div>
+              <div className="flex items-center gap-1 font-mono text-[11px]">
+                {(['mla', 'apa', 'chicago', 'bibtex'] as const).map((fmt) => (
+                  <button
+                    key={fmt}
+                    onClick={() => setCitationFormat(fmt)}
+                    className={`px-2 py-0.5 rounded uppercase font-medium transition-colors cursor-pointer ${
+                      citationFormat === fmt
+                        ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 shadow-2xs'
+                        : 'text-stone-500 hover:text-stone-900 dark:hover:text-stone-200 hover:bg-stone-200/60 dark:hover:bg-stone-800'
+                    }`}
+                  >
+                    {fmt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="relative p-3.5 rounded-lg bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800/80 font-mono text-xs text-stone-800 dark:text-stone-200 leading-relaxed select-all">
+              <pre className="font-mono whitespace-pre-wrap">{getCitationText()}</pre>
+              <button
+                onClick={handleCopyCitation}
+                className="absolute top-2.5 right-2.5 p-1.5 rounded-md bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 transition-colors cursor-pointer"
+                title="Copy citation to clipboard"
+              >
+                {copiedCitation ? (
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Reader Reflections & Reviews */}

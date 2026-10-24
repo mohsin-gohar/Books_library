@@ -39,7 +39,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
           {[
             {
               icon: BookOpen,
-              title: '200 Monographs',
+              title: '600+ Archival Volumes',
               desc: 'Curated volumes across seven disciplines, each with verified chapter excerpts, evaluations, and private study notes.',
               action: () => onNavigate && onNavigate({ name: 'catalog' }),
               actionText: 'Browse Catalog'

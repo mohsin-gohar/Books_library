@@ -46,7 +46,7 @@ export const BookGrid: React.FC<BookGridProps> = ({
           No matching volumes found
         </h3>
         <p className="text-sm text-stone-500 dark:text-stone-400 max-w-md mx-auto mb-6">
-          We couldn’t find any books matching your current search query or active category criteria among our 200 volumes.
+          We couldn’t find any books matching your current search query or active category criteria among our archival repository.
         </p>
         <button
           onClick={onResetFilters}

@@ -76,12 +76,33 @@ const seedOrders: Order[] = [
 
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+  // Validate a persisted order against the expected schema
+  function validatePersistedOrder(o: unknown): Order | null {
+    if (!o || typeof o !== 'object') return null;
+    const order = o as Record<string, unknown>;
+    const requiredStringFields = ['id', 'userId', 'userName', 'bookId', 'bookTitle', 'status', 'createdAt', 'address'];
+    for (const field of requiredStringFields) {
+      if (typeof order[field] !== 'string') return null;
+    }
+    if (typeof order.quantity !== 'number' || order.quantity < 1) return null;
+    const validStatuses: OrderStatus[] = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+    if (!validStatuses.includes(order.status as OrderStatus)) return null;
+    return order as unknown as Order;
+  }
+
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored) as Order[];
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        const parsed = JSON.parse(stored) as unknown[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const valid: Order[] = [];
+          for (const o of parsed) {
+            const validated = validatePersistedOrder(o);
+            if (validated) valid.push(validated);
+          }
+          if (valid.length > 0) return valid;
+        }
       }
     } catch { /* ignore */ }
     return seedOrders;
@@ -93,16 +114,18 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const placeOrder = useCallback((bookId: string, bookTitle: string, quantity = 1, address = '') => {
     if (!user) return null;
+    if (!bookId || !bookTitle.trim()) return null;
+    const qty = Math.max(1, Math.floor(quantity)) || 1;
     const order: Order = {
-      id: `ord-${Date.now()}`,
+      id: `ord-${crypto.randomUUID()}`,
       userId: user.id,
       userName: user.name,
       bookId,
-      bookTitle,
-      quantity,
+      bookTitle: bookTitle.trim(),
+      quantity: qty,
       status: 'Pending',
-      createdAt: new Date().toLocaleString(),
-      address: address || 'On file'
+      createdAt: new Date().toISOString(),
+      address: address.trim() || 'On file'
     };
     setOrders((prev) => [order, ...prev]);
     return order;
