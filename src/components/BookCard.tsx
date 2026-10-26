@@ -20,7 +20,7 @@ export const BookCard: React.FC<BookCardProps> = ({
   const status = getReadingStatus(book.id);
 
   return (
-    <div className="group relative flex flex-col justify-between h-full bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800/90 rounded-lg p-4 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:border-amber-300/60 dark:hover:border-amber-700/60">
+    <div className="group relative flex flex-col justify-between h-full bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800/90 rounded-xl p-4 card-elevate hover:border-amber-300/60 dark:hover:border-amber-700/60">
       {/* Top Cover Section */}
       <div className="relative">
         <div

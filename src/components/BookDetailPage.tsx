@@ -132,9 +132,13 @@ export const BookDetailPage: React.FC<BookDetailPageProps> = ({
     }
   };
 
-  const handleCopyCitation = () => {
+  const handleCopyCitation = async () => {
+    if (!navigator.clipboard) {
+      showToast('Clipboard not available in this browser');
+      return;
+    }
     try {
-      navigator.clipboard.writeText(getCitationText());
+      await navigator.clipboard.writeText(getCitationText());
       setCopiedCitation(true);
       showToast(`Copied ${citationFormat.toUpperCase()} citation`);
       setTimeout(() => setCopiedCitation(false), 2000);
@@ -168,14 +172,18 @@ export const BookDetailPage: React.FC<BookDetailPageProps> = ({
     setTimeout(() => setNoteSaved(false), 2000);
   };
 
-  const handleShare = () => {
-    if (!navigator.clipboard) return;
+  const handleShare = async () => {
+    if (!navigator.clipboard) {
+      showToast('Clipboard not available in this browser');
+      return;
+    }
     try {
-      navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(window.location.href);
       setCopiedLink(true);
+      showToast('Link copied to clipboard');
       setTimeout(() => setCopiedLink(false), 2000);
     } catch {
-      // ignore
+      showToast('Unable to copy link');
     }
   };
 
@@ -816,10 +824,16 @@ Preserved by Athenaeum Library Repository`;
                     showToast('Please provide your delivery address.');
                     return;
                   }
+                  if (!user) {
+                    showToast('Please sign in to place an order.');
+                    return;
+                  }
                   const order = placeOrder(book.id, book.title, orderQty, orderAddress.trim());
                   if (order) {
                     setOrderSuccess(true);
                     showToast(`Order placed for "${book.title}"`);
+                  } else {
+                    showToast('Unable to place order. Please try again.');
                   }
                 }}
                 className="space-y-4"

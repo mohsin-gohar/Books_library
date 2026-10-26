@@ -327,6 +327,56 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit, onSelect
     e.target.value = '';
   };
 
+  // Export Orders as CSV
+  const handleExportOrders = () => {
+    if (filteredOrders.length === 0) {
+      showToast('No orders to export.');
+      return;
+    }
+    const headers = ['Order ID', 'Customer', 'Book', 'Quantity', 'Status', 'Address', 'Created At'];
+    const rows = filteredOrders.map((o) => [
+      o.id,
+      o.userName,
+      o.bookTitle,
+      o.quantity,
+      o.status,
+      o.address,
+      o.createdAt
+    ]);
+    const csv = [headers, ...rows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `athenaeum-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Orders exported as CSV.');
+  };
+
+  // Export Users as CSV
+  const handleExportUsers = () => {
+    if (filteredUsers.length === 0) {
+      showToast('No users to export.');
+      return;
+    }
+    const headers = ['User ID', 'Name', 'Email', 'Role'];
+    const rows = filteredUsers.map((u) => [u.id, u.name, u.email, u.role]);
+    const csv = [headers, ...rows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `athenaeum-users-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Users exported as CSV.');
+  };
+
   const pendingOrdersCount = allOrders.filter((o) => o.status === 'Pending').length;
 
   return (
@@ -1401,9 +1451,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit, onSelect
                     Manage reader physical folio dispatches, update delivery statuses, and track addresses.
                   </p>
                 </div>
+                <button
+                  onClick={handleExportOrders}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 dark:bg-stone-100 dark:hover:bg-stone-200 text-stone-50 dark:text-stone-900 text-sm font-medium transition-colors shrink-0"
+                >
+                  <Download className="w-4 h-4" /> Export CSV
+                </button>
               </div>
-
-              {/* Filter Tabs & Search */}
               <div className="bg-white dark:bg-[#15161c] p-4 rounded-2xl border border-stone-200/80 dark:border-stone-800/80 shadow-2xs space-y-4">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="relative flex-1">
@@ -1541,6 +1595,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit, onSelect
                     Manage library membership roles, promote scholars to admin curators, and inspect accounts.
                   </p>
                 </div>
+                <button
+                  onClick={handleExportUsers}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 dark:bg-stone-100 dark:hover:bg-stone-200 text-stone-50 dark:text-stone-900 text-sm font-medium transition-colors shrink-0"
+                >
+                  <Download className="w-4 h-4" /> Export CSV
+                </button>
               </div>
 
               {/* Filter */}
@@ -1605,7 +1665,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit, onSelect
                         </td>
                         <td className="py-4 px-4 text-right">
                           <button
-                            onClick={() => setConfirmDeleteUserId(u.id)}
+                            onClick={() => {
+                            if (u.id === user?.id) {
+                              showToast('You cannot delete your own admin account.');
+                              return;
+                            }
+                            setConfirmDeleteUserId(u.id);
+                          }}
                             className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                             title="Delete user"
                           >
