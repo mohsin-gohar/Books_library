@@ -27,6 +27,7 @@ const LoginPage = lazy(() => import('./components/LoginPage').then((m) => ({ def
 const RegisterPage = lazy(() => import('./components/RegisterPage').then((m) => ({ default: m.RegisterPage })));
 const AccountPage = lazy(() => import('./components/AccountPage').then((m) => ({ default: m.AccountPage })));
 const ExplorePage = lazy(() => import('./components/ExplorePage').then((m) => ({ default: m.ExplorePage })));
+const ReadingJourneyPage = lazy(() => import('./components/ReadingJourneyPage').then((m) => ({ default: m.ReadingJourneyPage })));
 const ReaderModal = lazy(() => import('./components/ReaderModal').then((m) => ({ default: m.ReaderModal })));
 
 function MainApp() {
@@ -62,6 +63,8 @@ function MainApp() {
       title = 'Admin — Athenaeum';
     } else if (route.name === 'explore') {
       title = 'Explore — Athenaeum';
+    } else if (route.name === 'journey') {
+      title = 'Reading Journey — Athenaeum';
     } else {
       title = 'Catalog — Athenaeum';
     }
@@ -231,6 +234,14 @@ function MainApp() {
 
         {route.name === 'explore' && (
           <ExplorePage
+            onNavigate={navigate}
+            onSelectBook={handleSelectBook}
+            onStartReading={handleStartReading}
+          />
+        )}
+
+        {route.name === 'journey' && (
+          <ReadingJourneyPage
             onNavigate={navigate}
             onSelectBook={handleSelectBook}
             onStartReading={handleStartReading}

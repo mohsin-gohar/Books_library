@@ -75,6 +75,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               Explore
             </button>
             <button
+              onClick={() => onNavigate({ name: 'journey' })}
+              className={`hover:text-stone-950 dark:hover:text-white transition-colors cursor-pointer whitespace-nowrap shrink-0 relative py-1 ${isCurrent('journey') ? 'text-stone-950 dark:text-white font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-stone-900 dark:after:bg-stone-100' : ''}`}
+            >
+              Journey
+            </button>
+            <button
               onClick={() => onNavigate({ name: 'contact' })}
               className={`hover:text-stone-950 dark:hover:text-white transition-colors cursor-pointer whitespace-nowrap shrink-0 relative py-1 ${isCurrent('contact') ? 'text-stone-950 dark:text-white font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-stone-900 dark:after:bg-stone-100' : ''}`}
             >
@@ -253,6 +259,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="block w-full text-left py-2 text-sm font-medium text-stone-900 dark:text-stone-100"
           >
             Explore
+          </button>
+          <button
+            onClick={() => { onNavigate({ name: 'journey' }); setMobileMenuOpen(false); }}
+            className="block w-full text-left py-2 text-sm font-medium text-stone-900 dark:text-stone-100"
+          >
+            Journey
           </button>
           {user ? (
             <>
