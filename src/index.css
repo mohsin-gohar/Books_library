@@ -223,3 +223,8 @@ main {
 }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+
+/* Premium selection + focus polish */
+::selection { background: rgba(180, 83, 9, 0.25); color: inherit; }
+*:focus-visible { outline: 2px solid rgba(180, 83, 9, 0.55); outline-offset: 2px; border-radius: 6px; }
