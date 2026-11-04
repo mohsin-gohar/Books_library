@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Issue Book - LibraPro{% endblock %}
+{% block content %}
+<div class="max-w-2xl">
+    <h1 class="text-4xl font-bold gradient-text mb-2">Issue Book</h1>
+    <p class="text-slate-400 mb-8">Lend a book to a member</p>
+    <form method="POST" action="{{ url_for('do_issue') }}" class="glass rounded-2xl p-8 space-y-6">
+        <div>
+            <div class="flex items-center justify-between mb-2">
+                <label class="block text-sm text-slate-300">Select Book</label>
+                <a href="{{ url_for('scan') }}" class="text-sm text-indigo-400 hover:text-indigo-300"><i class="fas fa-barcode mr-1"></i> Scan ISBN</a>
+            </div>
+            <select name="book_id" id="bookSelect" required class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl">
+                <option value="">Choose available book...</option>
+                {% for book in books %}
+                <option value="{{ book.id }}" data-isbn="{{ book.isbn }}">{{ book.title }} - {{ book.author }} ({{ book.available }} left)</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm text-slate-300 mb-2">Select Member</label>
+            <select name="member_id" required class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl">
+                <option value="">Choose member...</option>
+                {% for m in members %}
+                <option value="{{ m.id }}">{{ m.name }} ({{ m.membership_type }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm text-slate-300 mb-2">Loan Period (days)</label>
+            <input type="number" name="days" value="14" min="1" max="60" class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl">
+        </div>
+        <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl font-semibold text-lg"><i class="fas fa-check mr-2"></i>Issue Book</button>
+    </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const params = new URLSearchParams(window.location.search);
+const prefillIsbn = params.get('isbn');
+if (prefillIsbn) {
+    const select = document.getElementById('bookSelect');
+    for (let opt of select.options) {
+        if (opt.dataset.isbn && opt.dataset.isbn.includes(prefillIsbn.replace(/[^0-9X]/gi, ''))) {
+            select.value = opt.value;
+            break;
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Barcode Scanner - LibraPro{% endblock %}
+{% block extra_head %}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold gradient-text">Barcode Scanner</h1>
+        <p class="text-slate-400 mt-1">Scan book ISBN barcodes using camera or USB scanner</p>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="glass rounded-2xl p-6">
+            <h2 class="text-xl font-semibold mb-4"><i class="fas fa-camera text-indigo-400"></i> Camera Scanner</h2>
+            <div id="reader" class="rounded-xl overflow-hidden bg-slate-900 min-h-[300px]"></div>
+            <button id="startScan" class="mt-4 w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-semibold">Start Camera Scan</button>
+            <button id="stopScan" class="mt-2 w-full py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold hidden">Stop Scanner</button>
+        </div>
+        <div class="glass rounded-2xl p-6">
+            <h2 class="text-xl font-semibold mb-4"><i class="fas fa-keyboard text-indigo-400"></i> Manual / USB Scanner</h2>
+            <p class="text-sm text-slate-400 mb-4">USB barcode scanners type automatically. Click the field and scan.</p>
+            <input type="text" id="manualIsbn" placeholder="Scan or type ISBN here..." autofocus class="w-full px-4 py-4 bg-slate-800/50 border border-slate-600 rounded-xl text-lg focus:border-indigo-500 focus:outline-none">
+            <button onclick="lookupIsbn()" class="mt-4 w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl font-semibold">Lookup Book</button>
+        </div>
+    </div>
+    <div id="result" class="mt-8 glass rounded-2xl p-6 hidden"><h2 class="text-xl font-semibold mb-4">Scan Result</h2><div id="resultContent"></div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let html5QrCode = null;
+document.getElementById('startScan').addEventListener('click', startScanner);
+document.getElementById('stopScan').addEventListener('click', stopScanner);
+document.getElementById('manualIsbn').addEventListener('keypress', function(e) { if (e.key === 'Enter') lookupIsbn(); });
+function startScanner() {
+    html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, onScanSuccess, () => {})
+    .then(() => { document.getElementById('startScan').classList.add('hidden'); document.getElementById('stopScan').classList.remove('hidden'); })
+    .catch(err => alert("Camera access failed: " + err));
+}
+function stopScanner() { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('startScan').classList.remove('hidden'); document.getElementById('stopScan').classList.add('hidden'); }); }
+function onScanSuccess(decodedText) { document.getElementById('manualIsbn').value = decodedText; stopScanner(); lookupIsbn(); }
+function lookupIsbn() {
+    const isbn = document.getElementById('manualIsbn').value.trim();
+    if (!isbn) return;
+    fetch('/api/book-by-isbn/' + encodeURIComponent(isbn)).then(r => r.json()).then(data => {
+        const resultDiv = document.getElementById('result');
+        const content = document.getElementById('resultContent');
+        resultDiv.classList.remove('hidden');
+        if (data.found) {
+            content.innerHTML = `<div class="flex items-start gap-4"><div class="w-16 h-16 rounded-xl bg-indigo-500/20 flex items-center justify-center"><i class="fas fa-book text-2xl text-indigo-400"></i></div><div class="flex-1"><h3 class="text-xl font-bold">${data.book.title}</h3><p class="text-slate-400">${data.book.author}</p><p class="text-sm mt-2">ISBN: <span class="font-mono">${data.book.isbn}</span></p><p class="text-sm">Available: <span class="font-semibold ${data.book.available > 0 ? 'text-emerald-400' : 'text-red-400'}">${data.book.available} / ${data.book.copies}</span></p></div></div><div class="mt-6 flex gap-3"><a href="/issue?isbn=${encodeURIComponent(data.book.isbn)}" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-semibold">Issue This Book</a><a href="/books" class="px-6 py-3 border border-slate-600 rounded-xl">View All Books</a></div>`;
+        } else {
+            content.innerHTML = `<div class="text-center py-6"><i class="fas fa-exclamation-circle text-4xl text-amber-400 mb-4"></i><p class="text-lg">No book found with ISBN: <span class="font-mono">${isbn}</span></p></div>`;
+        }
+    }).catch(() => alert('Lookup failed'));
+}
+</script>
+{% endblock %}
