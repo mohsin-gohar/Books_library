@@ -1,28 +1,32 @@
-# LibraPro - Premium Library Management System
+# LibraPro - Complete Premium Library Management System
 
-A complete, production-ready Library Management System with premium dark UI, built with Flask + SQLAlchemy.
+Full-featured professional Library Management Software.
 
-## Features
-- Premium glassmorphism dashboard with charts
+## Complete Features
+- Premium glassmorphism dashboard with charts & stats
 - Role-based access (Admin / Librarian / Member)
-- Full Books CRUD with search & categories
-- Members management
-- Book Issue / Return with fine calculation
+- Books CRUD + detail pages + search/filter
+- Categories management
+- Members management + member history
+- Book Issue / Return with automatic fine calculation
+- Overdue tracking page
+- Reservations / Holds
+- Barcode Scanning (camera + USB scanner)
+- CSV Export (Books & Transactions)
+- Activity Logs
+- Library Settings (loan days, fine rate, max books)
+- User management (create librarians)
 - Transaction history
-- **Barcode Scanning** (camera + USB scanner via html5-qrcode)
 - Seed data included
-- Responsive modern design
 
 ## Default Login
 - Username: `admin`
 - Password: `admin123`
 
-## Run Locally
+## Run
 ```bash
 cd libra-pro
 pip install -r requirements.txt
 python app.py
 ```
 Open http://localhost:5000
-
-Built as a $100B-quality professional library software.
