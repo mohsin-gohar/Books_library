@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Books - LibraPro{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+    <div><h1 class="text-4xl font-bold gradient-text">Books Catalog</h1><p class="text-slate-400">Manage your premium library collection</p></div>
+    {% if current_user.role in ['admin', 'librarian'] %}
+    <a href="{{ url_for('add_book') }}" class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl font-semibold"><i class="fas fa-plus mr-2"></i>Add Book</a>
+    {% endif %}
+</div>
+<form method="GET" class="flex gap-4 mb-6">
+    <input type="text" name="search" value="{{ search }}" placeholder="Search title, author, ISBN..." class="flex-1 px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl focus:border-indigo-500">
+    <select name="category" class="px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl"><option value="">All Categories</option>{% for cat in categories %}<option value="{{ cat }}">{{ cat }}</option>{% endfor %}</select>
+    <button type="submit" class="px-6 py-3 bg-indigo-600 rounded-xl">Search</button>
+</form>
+<div class="glass rounded-2xl overflow-hidden"><table class="w-full"><thead class="bg-slate-800/50"><tr><th class="px-6 py-4 text-left text-sm font-medium text-slate-300">Title</th><th class="px-6 py-4 text-left text-sm font-medium text-slate-300">Author</th><th class="px-6 py-4 text-left text-sm font-medium text-slate-300">Category</th><th class="px-6 py-4 text-center text-sm font-medium text-slate-300">Available</th><th class="px-6 py-4 text-right text-sm font-medium text-slate-300">Actions</th></tr></thead><tbody class="divide-y divide-slate-700/50">{% for book in books %}<tr class="hover:bg-slate-800/30 transition"><td class="px-6 py-4"><p class="font-medium">{{ book.title }}</p><p class="text-xs text-slate-400">{{ book.isbn }}</p></td><td class="px-6 py-4">{{ book.author }}</td><td class="px-6 py-4"><span class="px-2 py-1 bg-indigo-500/20 text-indigo-300 rounded-lg text-xs">{{ book.category }}</span></td><td class="px-6 py-4 text-center">{{ book.available }}/{{ book.copies }}</td><td class="px-6 py-4 text-right space-x-2">{% if current_user.role in ['admin', 'librarian'] %}<a href="{{ url_for('edit_book', id=book.id) }}" class="text-indigo-400 hover:text-indigo-300"><i class="fas fa-edit"></i></a>{% endif %}{% if current_user.role == 'admin' %}<a href="{{ url_for('delete_book', id=book.id) }}" onclick="return confirm('Delete this book?')" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></a>{% endif %}</td></tr>{% else %}<tr><td colspan="5" class="px-6 py-12 text-center text-slate-500">No books found</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}
