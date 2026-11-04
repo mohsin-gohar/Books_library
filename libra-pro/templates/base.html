@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Premium Library MS{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #6366f1; }
+        [data-theme="light"] { --bg: #f8fafc; --card: #ffffff; --accent: #4f46e5; }
+        body { background: var(--bg); color: #e2e8f0; transition: all 0.3s; }
+        [data-theme="light"] body { color: #1e293b; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+        [data-theme="light"] .glass { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.05); }
+        .gradient-text { background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(99,102,241,0.15); }
+        .sidebar { transition: all 0.3s; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen">
+    {% if current_user.is_authenticated %}
+    <div class="flex h-screen overflow-hidden">
+        <aside class="sidebar w-64 glass border-r border-slate-700/50 flex flex-col">
+            <div class="p-6 border-b border-slate-700/50">
+                <h1 class="text-2xl font-bold gradient-text flex items-center gap-2">
+                    <i class="fas fa-book-open"></i> LibraPro
+                </h1>
+                <p class="text-xs text-slate-400 mt-1">Premium Library System</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-1">
+                <a href="{{ url_for('dashboard') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint == 'dashboard' }}">
+                    <i class="fas fa-chart-line w-5"></i> Dashboard
+                </a>
+                <a href="{{ url_for('books') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint.startswith('books') }}">
+                    <i class="fas fa-book w-5"></i> Books
+                </a>
+                <a href="{{ url_for('members') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint.startswith('members') }}">
+                    <i class="fas fa-users w-5"></i> Members
+                </a>
+                <a href="{{ url_for('issue_page') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint == 'issue_page' }}">
+                    <i class="fas fa-hand-holding-heart w-5"></i> Issue Book
+                </a>
+                <a href="{{ url_for('scan') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint == 'scan' }}">
+                    <i class="fas fa-barcode w-5"></i> Scan Barcode
+                </a>
+                <a href="{{ url_for('transactions') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint == 'transactions' }}">
+                    <i class="fas fa-exchange-alt w-5"></i> Transactions
+                </a>
+                {% if current_user.role in ['admin', 'librarian'] %}
+                <a href="{{ url_for('reports') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint == 'reports' }}">
+                    <i class="fas fa-file-alt w-5"></i> Reports
+                </a>
+                {% endif %}
+            </nav>
+            <div class="p-4 border-t border-slate-700/50">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold">
+                        {{ current_user.username[0].upper() }}
+                    </div>
+                    <div>
+                        <p class="font-medium">{{ current_user.username }}</p>
+                        <p class="text-xs text-slate-400 capitalize">{{ current_user.role }}</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('profile') }}" class="block text-sm text-slate-400 hover:text-white mb-2"><i class="fas fa-user-cog mr-2"></i>Profile</a>
+                <a href="{{ url_for('logout') }}" class="block text-sm text-red-400 hover:text-red-300"><i class="fas fa-sign-out-alt mr-2"></i>Logout</a>
+            </div>
+        </aside>
+        <main class="flex-1 overflow-y-auto p-8">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="mb-6 p-4 rounded-xl {{ 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' if category == 'success' else 'bg-red-500/20 text-red-300 border border-red-500/30' }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% else %}
+    {% block auth_content %}{% endblock %}
+    {% endif %}
+    {% block scripts %}{% endblock %}
+</body>
+</html>
