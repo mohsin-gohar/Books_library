@@ -31,7 +31,7 @@
                 </h1>
                 <p class="text-xs text-slate-400 mt-1">Premium Library System</p>
             </div>
-            <nav class="flex-1 p-4 space-y-1">
+            <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
                 <a href="{{ url_for('dashboard') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint == 'dashboard' }}">
                     <i class="fas fa-chart-line w-5"></i> Dashboard
                 </a>
@@ -50,9 +50,29 @@
                 <a href="{{ url_for('transactions') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint == 'transactions' }}">
                     <i class="fas fa-exchange-alt w-5"></i> Transactions
                 </a>
+                <a href="{{ url_for('overdue') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint == 'overdue' }}">
+                    <i class="fas fa-exclamation-triangle w-5"></i> Overdue
+                </a>
+                <a href="{{ url_for('reservations') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint == 'reservations' }}">
+                    <i class="fas fa-bookmark w-5"></i> Reservations
+                </a>
                 {% if current_user.role in ['admin', 'librarian'] %}
+                <a href="{{ url_for('categories') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint == 'categories' }}">
+                    <i class="fas fa-tags w-5"></i> Categories
+                </a>
                 <a href="{{ url_for('reports') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint == 'reports' }}">
                     <i class="fas fa-file-alt w-5"></i> Reports
+                </a>
+                {% endif %}
+                {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('settings') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint == 'settings' }}">
+                    <i class="fas fa-cog w-5"></i> Settings
+                </a>
+                <a href="{{ url_for('users') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint == 'users' }}">
+                    <i class="fas fa-user-shield w-5"></i> Users
+                </a>
+                <a href="{{ url_for('logs') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-500/20 transition {{ 'bg-indigo-500/30 text-white' if request.endpoint == 'logs' }}">
+                    <i class="fas fa-history w-5"></i> Activity Logs
                 </a>
                 {% endif %}
             </nav>
