@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Book Details - LibraPro{% endblock %}
+{% block content %}
+<div class="mb-8"><h1 class="text-4xl font-bold gradient-text">{{ book.title }}</h1><p class="text-slate-400">{{ book.author }}</p></div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="glass rounded-2xl p-6"><p class="text-sm text-slate-400">ISBN</p><p class="font-mono">{{ book.isbn }}</p><p class="text-sm text-slate-400 mt-4">Category</p><p>{{ book.category.name if book.category else '-' }}</p><p class="text-sm text-slate-400 mt-4">Available</p><p class="text-2xl font-bold">{{ book.available }} / {{ book.copies }}</p><p class="text-sm text-slate-400 mt-4">Year</p><p>{{ book.year or '-' }}</p></div>
+    <div class="lg:col-span-2 glass rounded-2xl p-6"><h2 class="text-xl font-semibold mb-4">Recent Transactions</h2>{% for t in transactions %}<div class="py-3 border-b border-slate-700/50"><p>{{ t.member.name }} — {{ t.status }}</p><p class="text-sm text-slate-400">{{ t.issued_at.strftime('%d %b %Y') }}</p></div>{% else %}<p class="text-slate-500">No transactions</p>{% endfor %}</div>
+</div>
+{% endblock %}

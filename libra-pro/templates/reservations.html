@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Reservations - LibraPro{% endblock %}
+{% block content %}
+<div class="mb-8"><h1 class="text-4xl font-bold gradient-text">Reservations</h1><p class="text-slate-400">Book holds and reservations</p></div>
+<div class="glass rounded-2xl overflow-hidden"><table class="w-full"><thead class="bg-slate-800/50"><tr><th class="px-6 py-4 text-left">Book</th><th class="px-6 py-4 text-left">Member</th><th class="px-6 py-4 text-left">Reserved</th><th class="px-6 py-4 text-left">Status</th></tr></thead><tbody class="divide-y divide-slate-700/50">{% for r in reservations %}<tr><td class="px-6 py-4">{{ r.book.title }}</td><td class="px-6 py-4">{{ r.member.name }}</td><td class="px-6 py-4 text-sm">{{ r.reserved_at.strftime('%d %b %Y') }}</td><td class="px-6 py-4"><span class="px-2 py-1 rounded-lg text-xs bg-indigo-500/20 text-indigo-300">{{ r.status|title }}</span></td></tr>{% else %}<tr><td colspan="4" class="px-6 py-12 text-center text-slate-500">No reservations</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Categories - LibraPro{% endblock %}
+{% block content %}
+<div class="mb-8 flex justify-between items-center"><div><h1 class="text-4xl font-bold gradient-text">Categories</h1><p class="text-slate-400">Manage book categories</p></div></div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="lg:col-span-1 glass rounded-2xl p-6"><h2 class="text-xl font-semibold mb-4">Add Category</h2><form method="POST" action="{{ url_for('add_category') }}" class="space-y-4"><input type="text" name="name" required placeholder="Category name" class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl"><textarea name="description" placeholder="Description" rows="3" class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl"></textarea><button type="submit" class="w-full py-3 bg-indigo-600 rounded-xl font-semibold">Add</button></form></div>
+    <div class="lg:col-span-2 glass rounded-2xl overflow-hidden"><table class="w-full"><thead class="bg-slate-800/50"><tr><th class="px-6 py-4 text-left">Name</th><th class="px-6 py-4 text-left">Books</th><th class="px-6 py-4 text-left">Description</th></tr></thead><tbody class="divide-y divide-slate-700/50">{% for cat in categories %}<tr><td class="px-6 py-4 font-medium">{{ cat.name }}</td><td class="px-6 py-4">{{ cat.books|length }}</td><td class="px-6 py-4 text-sm text-slate-400">{{ cat.description or '-' }}</td></tr>{% else %}<tr><td colspan="3" class="px-6 py-8 text-center text-slate-500">No categories</td></tr>{% endfor %}</tbody></table></div>
+</div>
+{% endblock %}
