@@ -2,10 +2,10 @@
   "name": "@athenaeum/shared",
   "version": "1.0.0",
   "description": "Shared domain models, RBAC permissions, and DTO contracts for Athenaeum Enterprise SaaS",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc -b"
   },
   "devDependencies": {
     "typescript": "^5.7.0"

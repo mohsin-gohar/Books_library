@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { PermissionString, EnterpriseSystemRole, DEFAULT_ROLE_PERMISSIONS } from '../../../shared/src/types/rbac';
+import { Permissions, PermissionString, EnterpriseSystemRole, DEFAULT_ROLE_PERMISSIONS } from '@athenaeum/shared';
 
 export interface AuthenticatedUser {
   id: string;

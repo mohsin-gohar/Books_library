@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { BaseWebhookPayload, WebhookEventType } from '../../../shared/src/types/webhooks';
+import { BaseWebhookPayload, WebhookEventType } from '@athenaeum/shared';
 
 export interface WebhookEndpointRecord {
   id: string;

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authGuard, requirePermissions } from '../guards/rbac.guard';
-import { Permissions } from '../../../shared/src/types/rbac';
+import { Permissions } from '@athenaeum/shared';
 
 export const modulesRouter = Router();
 
@@ -75,7 +75,7 @@ modulesRouter.get('/members', requirePermissions([Permissions.MEMBER_VIEW]), (re
 // -------------------------------------------------------------
 // MODULE 4: READING JOURNEYS & PREMIUM
 // -------------------------------------------------------------
-modulesRouter.get('/journeys/goals', requirePermissions([Permissions.JOURNEY_GOALS_MANAGE], false), (req: Request, res: Response) => {
+modulesRouter.get('/journeys/goals', requirePermissions([Permissions.JOURNEY_GOALS_MANAGE]), (req: Request, res: Response) => {
   res.json({
     tenantId: req.tenant?.organizationId,
     userId: req.user?.id,

@@ -1,13 +1,20 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "declaration": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "composite": true,
+    "paths": {
+      "@athenaeum/shared": ["../shared/src"]
+    },
+    "rootDir": "."
   },
-  "include": ["src/**/*", "tests/**/*"]
+  "include": ["src/**/*", "tests/**/*"],
+  "references": [
+    { "path": "../shared" }
+  ]
 }

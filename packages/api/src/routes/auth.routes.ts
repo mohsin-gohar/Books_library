@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { generateToken } from '../guards/rbac.guard';
-import { DEFAULT_ROLE_PERMISSIONS } from '../../../shared/src/types/rbac';
+import { DEFAULT_ROLE_PERMISSIONS } from '@athenaeum/shared';
 
 export const authRouter = Router();
 
@@ -39,7 +39,10 @@ const DEMO_USERS = [
 // POST /api/v1/auth/login
 authRouter.post('/login', (req: Request, res: Response) => {
   const { email } = req.body;
-  const user = DEMO_USERS.find((u) => u.email === email) || DEMO_USERS[1];
+  const user = DEMO_USERS.find((u) => u.email === email);
+  if (!user) {
+    return res.status(401).json({ error: 'Unauthorized', message: 'Invalid credentials' });
+  }
   const permissions = (DEFAULT_ROLE_PERMISSIONS as any)[user.role] || [];
 
   const token = generateToken({

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Permissions, DEFAULT_ROLE_PERMISSIONS } from '../../shared/src/types/rbac.js';
+import { Permissions, DEFAULT_ROLE_PERMISSIONS } from '@athenaeum/shared';
 import { WebhookDispatcherService } from '../src/services/webhook.service.js';
 
 test('RBAC System - Validates 60+ granular enterprise permissions defined', () => {
