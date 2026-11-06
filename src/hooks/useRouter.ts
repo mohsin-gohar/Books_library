@@ -13,7 +13,8 @@ export type Route =
   | { name: 'register' }
   | { name: 'account' }
   | { name: 'explore' }
-  | { name: 'journey' };
+  | { name: 'journey' }
+  | { name: 'enterprise' };
 
 function parseHash(hash: string): Route {
   const clean = hash.replace(/^#\/?/, '').trim();
@@ -38,6 +39,9 @@ function parseHash(hash: string): Route {
   }
   if (clean === 'admin') {
     return { name: 'admin' };
+  }
+  if (clean === 'enterprise' || clean === 'saas') {
+    return { name: 'enterprise' };
   }
   if (clean === 'login') {
     return { name: 'login' };
@@ -87,6 +91,8 @@ function routeToHash(route: Route): string {
       return '#/explore';
     case 'journey':
       return '#/journey';
+    case 'enterprise':
+      return '#/enterprise';
     case 'reader':
       return `#/reader/${route.bookId}`;
   }

@@ -87,6 +87,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               Contact
             </button>
             <button
+              onClick={() => onNavigate({ name: 'enterprise' })}
+              className={`hover:text-stone-950 dark:hover:text-white transition-colors cursor-pointer whitespace-nowrap shrink-0 relative py-1 flex items-center gap-1.5 ${
+                isCurrent('enterprise')
+                  ? 'text-amber-600 dark:text-amber-400 font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-amber-600 dark:after:bg-amber-400'
+                  : 'text-amber-700/80 dark:text-amber-400/80'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>Enterprise SaaS</span>
+            </button>
+            <button
               onClick={() => onNavigate({ name: 'favorites' })}
               className={`hover:text-stone-950 dark:hover:text-white transition-colors cursor-pointer whitespace-nowrap shrink-0 relative py-1 flex items-center gap-1.5 ${
                 isCurrent('favorites')
@@ -253,6 +264,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="block w-full text-left py-2 text-sm font-medium text-stone-900 dark:text-stone-100"
           >
             Contact
+          </button>
+          <button
+            onClick={() => { onNavigate({ name: 'enterprise' }); setMobileMenuOpen(false); }}
+            className="block w-full text-left py-2 text-sm font-medium text-amber-600 dark:text-amber-400"
+          >
+            Enterprise SaaS Platform
           </button>
           <button
             onClick={() => { onNavigate({ name: 'explore' }); setMobileMenuOpen(false); }}
