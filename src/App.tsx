@@ -29,6 +29,7 @@ const AccountPage = lazy(() => import('./components/AccountPage').then((m) => ({
 const ExplorePage = lazy(() => import('./components/ExplorePage').then((m) => ({ default: m.ExplorePage })));
 const ReadingJourneyPage = lazy(() => import('./components/ReadingJourneyPage').then((m) => ({ default: m.ReadingJourneyPage })));
 const ReaderModal = lazy(() => import('./components/ReaderModal').then((m) => ({ default: m.ReaderModal })));
+const EnterpriseAdminDashboard = lazy(() => import('./components/EnterpriseAdminDashboard').then((m) => ({ default: m.EnterpriseAdminDashboard })));
 
 function MainApp() {
   const { route, navigate, back } = useRouter();
@@ -61,6 +62,8 @@ function MainApp() {
       title = 'Contact — Athenaeum';
     } else if (route.name === 'admin') {
       title = 'Admin — Athenaeum';
+    } else if (route.name === 'enterprise') {
+      title = 'Enterprise SaaS ERP — Athenaeum';
     } else if (route.name === 'explore') {
       title = 'Explore — Athenaeum';
     } else if (route.name === 'journey') {
@@ -225,6 +228,12 @@ function MainApp() {
           <CurationsPage
             onSelectBook={handleSelectBook}
             onStartReading={handleStartReading}
+          />
+        )}
+
+        {route.name === 'enterprise' && (
+          <EnterpriseAdminDashboard
+            onExit={() => navigate({ name: 'catalog' })}
           />
         )}
 

@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: athenaeum-enterprise
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: athenaeum-api
+  namespace: athenaeum-enterprise
+  labels:
+    app: athenaeum-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: athenaeum-api
+  template:
+    metadata:
+      labels:
+        app: athenaeum-api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/athenaeum/api:latest
+          ports:
+            - containerPort: 4000
+          env:
+            - name: PORT
+              value: "4000"
+            - name: NODE_ENV
+              value: "production"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1536Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: athenaeum-api-service
+  namespace: athenaeum-enterprise
+spec:
+  type: ClusterIP
+  selector:
+    app: athenaeum-api
+  ports:
+    - port: 4000
+      targetPort: 4000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: athenaeum-web
+  namespace: athenaeum-enterprise
+  labels:
+    app: athenaeum-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: athenaeum-web
+  template:
+    metadata:
+      labels:
+        app: athenaeum-web
+    spec:
+      containers:
+        - name: web
+          image: ghcr.io/athenaeum/web:latest
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: athenaeum-web-service
+  namespace: athenaeum-enterprise
+spec:
+  type: ClusterIP
+  selector:
+    app: athenaeum-web
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: athenaeum-ingress
+  namespace: athenaeum-enterprise
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+    - hosts:
+        - "*.librarysaas.com"
+        - "librarysaas.com"
+      secretName: athenaeum-wildcard-tls
+  rules:
+    - host: api.librarysaas.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: athenaeum-api-service
+                port:
+                  number: 4000
+    - host: librarysaas.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: athenaeum-web-service
+                port:
+                  number: 80

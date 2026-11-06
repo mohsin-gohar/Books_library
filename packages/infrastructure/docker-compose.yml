@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: athenaeum-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: athenaeum_saas
+      POSTGRES_PASSWORD: supersecretpassword
+      POSTGRES_DB: athenaeum_enterprise
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U athenaeum_saas -d athenaeum_enterprise"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: athenaeum-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
+    container_name: athenaeum-elasticsearch
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
+  api:
+    build:
+      context: .
+      dockerfile: packages/infrastructure/Dockerfile.api
+    container_name: athenaeum-api
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://athenaeum_saas:supersecretpassword@postgres:5432/athenaeum_enterprise?schema=public
+      REDIS_URL: redis://redis:6379
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      JWT_SECRET: athenaeum-saas-enterprise-secret-key-2025
+      PORT: 4000
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  web:
+    build:
+      context: .
+      dockerfile: packages/infrastructure/Dockerfile.web
+    container_name: athenaeum-web
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  redisdata:
+  esdata:

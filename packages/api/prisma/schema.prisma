@@ -1,0 +1,575 @@
+// Prisma Enterprise SAAS Schema
+// Multi-Tenant Isolation, 7 Core Modules, RBAC, GDPR & Enterprise Security
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// =========================================================================
+// TENANCY & ORGANIZATION HIERARCHY
+// =========================================================================
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  PROVISIONING
+  ARCHIVED
+}
+
+enum SubscriptionTier {
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+  CONSORTIUM
+}
+
+model Organization {
+  id              String           @id @default(uuid())
+  name            String
+  slug            String           @unique
+  customDomain    String?          @unique
+  status          TenantStatus     @default(ACTIVE)
+  tier            SubscriptionTier @default(PROFESSIONAL)
+  settings        Json?            // White-label colors, fonts, loan rules
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  branches        Branch[]
+  users           User[]
+  roles           Role[]
+  books           Book[]
+  loans           Loan[]
+  members         Member[]
+  readingGoals    ReadingGoal[]
+  bookClubs       BookClub[]
+  challenges      ReadingChallenge[]
+  invoices        Invoice[]
+  auditLogs       AuditLog[]
+  webhooks        WebhookEndpoint[]
+  apiKeys         ApiKey[]
+
+  @@index([slug])
+  @@index([customDomain])
+}
+
+model Branch {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name            String
+  code            String
+  address         String
+  city            String
+  country         String
+  timezone        String        @default("UTC")
+  isMainCampus    Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  departments     Department[]
+  inventoryCopies BookCopy[]
+  members         Member[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+}
+
+model Department {
+  id            String    @id @default(uuid())
+  branchId      String
+  branch        Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name          String
+  code          String
+  floorLocation String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  members       Member[]
+
+  @@unique([branchId, code])
+  @@index([branchId])
+}
+
+// =========================================================================
+// IDENTITY, RBAC & ENTERPRISE SECURITY
+// =========================================================================
+
+enum AuthProvider {
+  LOCAL
+  SAML
+  OAUTH2_GOOGLE
+  OAUTH2_AZURE
+  LDAP
+}
+
+model User {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email           String
+  passwordHash    String?
+  name            String
+  authProvider    AuthProvider  @default(LOCAL)
+  providerId      String?
+  isActive        Boolean       @default(true)
+  isMfaEnabled    Boolean       @default(false)
+  mfaSecret       String?
+  lastLoginAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  roleId          String
+  role            Role          @relation(fields: [roleId], references: [id])
+  memberProfile   Member?
+  sessions        Session[]
+  auditLogs       AuditLog[]
+
+  @@unique([organizationId, email])
+  @@index([organizationId, email])
+}
+
+model Role {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  isSystem        Boolean       @default(false)
+  permissions     String[]      // List of 60+ permission keys
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  users           User[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model Session {
+  id              String        @id @default(uuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String
+  ipAddress       String?
+  userAgent       String?
+  deviceType      String?
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  createdAt       DateTime      @default(now())
+
+  @@index([userId])
+  @@index([refreshTokenHash])
+}
+
+// =========================================================================
+// MODULE 1: CATALOG & INVENTORY
+// =========================================================================
+
+model Book {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title           String
+  subtitle        String?
+  author          String
+  authorBio       String?
+  coverImage      String?
+  category        String
+  isbn            String?
+  publisher       String?
+  publishedYear   Int?
+  pages           Int           @default(250)
+  language        String        @default("EN")
+  rating          Float         @default(4.8)
+  ratingCount     Int           @default(0)
+  summary         String?       @db.Text
+  quote           String?       @db.Text
+  quoteAttribution String?
+  sampleExcerpt   Json?
+  tags            String[]
+  featured        Boolean       @default(false)
+  edition         String?
+  classificationNo String?      // Dewey/LC call number
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  copies          BookCopy[]
+  loans           Loan[]
+  holds           Hold[]
+  readingProgress ReadingProgress[]
+  reviews         Review[]
+
+  @@index([organizationId, category])
+  @@index([organizationId, isbn])
+  @@index([organizationId, featured])
+}
+
+enum CopyStatus {
+  AVAILABLE
+  CHECKED_OUT
+  RESERVED
+  IN_MAINTENANCE
+  LOST
+}
+
+model BookCopy {
+  id              String        @id @default(uuid())
+  bookId          String
+  book            Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  branchId        String
+  branch          Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  barcode         String
+  rfidTag         String?
+  shelfLocation   String?
+  status          CopyStatus    @default(AVAILABLE)
+  acquiredDate    DateTime      @default(now())
+  costCents       Int           @default(2500)
+
+  loans           Loan[]
+
+  @@unique([branchId, barcode])
+  @@index([bookId])
+  @@index([branchId, status])
+}
+
+// =========================================================================
+// MODULE 2: CIRCULATION
+// =========================================================================
+
+enum LoanStatus {
+  ACTIVE
+  RETURNED
+  OVERDUE
+  LOST
+  CLAIMED_RETURN
+}
+
+model Loan {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  bookId          String
+  book            Book          @relation(fields: [bookId], references: [id])
+  copyId          String
+  copy            BookCopy      @relation(fields: [copyId], references: [id])
+  memberId        String
+  member          Member        @relation(fields: [memberId], references: [id])
+  issuedAt        DateTime      @default(now())
+  dueDate         DateTime
+  returnedAt      DateTime?
+  renewalCount    Int           @default(0)
+  fineAmountCents Int           @default(0)
+  isFinePaid      Boolean       @default(false)
+  status          LoanStatus    @default(ACTIVE)
+
+  @@index([organizationId, status])
+  @@index([memberId])
+  @@index([bookId])
+  @@index([dueDate])
+}
+
+enum HoldStatus {
+  PENDING
+  READY_FOR_PICKUP
+  FULFILLED
+  CANCELLED
+  EXPIRED
+}
+
+model Hold {
+  id              String        @id @default(uuid())
+  bookId          String
+  book            Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  memberId        String
+  member          Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  pickupBranchId  String
+  queuePosition   Int           @default(1)
+  status          HoldStatus    @default(PENDING)
+  createdAt       DateTime      @default(now())
+  expiresAt       DateTime?
+
+  @@index([bookId, status])
+  @@index([memberId])
+}
+
+// =========================================================================
+// MODULE 3: MEMBERS & PATRONS
+// =========================================================================
+
+enum MemberStatus {
+  ACTIVE
+  EXPIRED
+  BLOCKED
+  SUSPENDED
+}
+
+enum MemberTier {
+  STANDARD
+  SCHOLAR
+  FACULTY
+  VIP
+}
+
+model Member {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId          String?       @unique
+  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  branchId        String
+  branch          Branch        @relation(fields: [branchId], references: [id])
+  departmentId    String?
+  department      Department?   @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  cardNumber      String
+  fullName        String
+  email           String
+  phone           String?
+  tier            MemberTier    @default(STANDARD)
+  status          MemberStatus  @default(ACTIVE)
+  maxLoansAllowed Int           @default(5)
+  balanceDueCents Int           @default(0)
+  gdprConsentDate DateTime?
+  joinedAt        DateTime      @default(now())
+  expiresAt       DateTime?
+
+  loans           Loan[]
+  holds           Hold[]
+  invoices        Invoice[]
+  readingProgress ReadingProgress[]
+  reviews         Review[]
+  clubMemberships ClubMember[]
+
+  @@unique([organizationId, cardNumber])
+  @@index([organizationId, email])
+  @@index([branchId])
+}
+
+// =========================================================================
+// MODULE 4: READING JOURNEYS, RECOMMENDATIONS & PREMIUM FEATURES
+// =========================================================================
+
+model ReadingGoal {
+  id                 String        @id @default(uuid())
+  organizationId     String
+  organization       Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId             String
+  year               Int
+  targetBooks        Int           @default(12)
+  completedBooks     Int           @default(0)
+  totalPagesRead     Int           @default(0)
+  currentStreakDays  Int           @default(0)
+  longestStreakDays  Int           @default(0)
+  lastReadDate       DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@unique([userId, year])
+  @@index([organizationId])
+}
+
+enum ProgressStatus {
+  WANT_TO_READ
+  CURRENTLY_READING
+  COMPLETED
+}
+
+model ReadingProgress {
+  id              String         @id @default(uuid())
+  memberId        String
+  member          Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  bookId          String
+  book            Book           @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  status          ProgressStatus @default(CURRENTLY_READING)
+  currentPage     Int            @default(0)
+  totalPages      Int
+  notes           String?        @db.Text
+  lastReadAt      DateTime       @default(now())
+
+  @@unique([memberId, bookId])
+  @@index([memberId])
+}
+
+model BookClub {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  currentBookTitle String?
+  meetingSchedule String?       // e.g. "Bi-weekly on Thursdays 6PM"
+  maxCapacity     Int           @default(50)
+  createdAt       DateTime      @default(now())
+
+  members         ClubMember[]
+
+  @@index([organizationId])
+}
+
+model ClubMember {
+  id          String    @id @default(uuid())
+  clubId      String
+  club        BookClub  @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  memberId    String
+  member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  role        String    @default("PARTICIPANT") // MODERATOR, PARTICIPANT
+  joinedAt    DateTime  @default(now())
+
+  @@unique([clubId, memberId])
+}
+
+model ReadingChallenge {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title           String
+  description     String
+  targetBookCount Int
+  badgeRewardCode String
+  startDate       DateTime
+  endDate         DateTime
+  createdAt       DateTime      @default(now())
+
+  @@index([organizationId])
+}
+
+model Review {
+  id          String    @id @default(uuid())
+  bookId      String
+  book        Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  memberId    String
+  member      Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  rating      Int       @default(5)
+  content     String    @db.Text
+  isModerated Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  @@index([bookId])
+  @@index([memberId])
+}
+
+// =========================================================================
+// MODULE 5: ANALYTICS & AUDIT LOGGING
+// =========================================================================
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  CHECKOUT
+  RETURN
+  MEMBER_CREATE
+  MEMBER_DELETE
+  BOOK_CREATE
+  BOOK_DELETE
+  ROLE_MODIFY
+  CONFIG_CHANGE
+  GDPR_EXPORT
+}
+
+model AuditLog {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action          AuditAction
+  entityType      String        // e.g. "Book", "Loan", "Member"
+  entityId        String?
+  details         Json?
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime      @default(now())
+
+  @@index([organizationId, action])
+  @@index([organizationId, createdAt])
+}
+
+// =========================================================================
+// MODULE 6: ACCOUNTING & PAYMENTS
+// =========================================================================
+
+enum InvoiceStatus {
+  OPEN
+  PAID
+  VOID
+  REFUNDED
+}
+
+enum InvoiceType {
+  MEMBERSHIP_FEE
+  LATE_FINE
+  BOOK_PURCHASE
+  ENTERPRISE_LICENSE
+}
+
+model Invoice {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  memberId        String?
+  member          Member?       @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  amountCents     Int
+  currency        String        @default("USD")
+  type            InvoiceType
+  status          InvoiceStatus @default(OPEN)
+  stripeChargeId  String?
+  paypalOrderId   String?
+  description     String?
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+
+  @@index([organizationId, status])
+  @@index([memberId])
+}
+
+// =========================================================================
+// MODULE 7: INTEGRATIONS, WEBHOOKS & API KEYS
+// =========================================================================
+
+model WebhookEndpoint {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  url             String
+  secretKey       String
+  events          String[]      // e.g. ["circulation.checkout", "circulation.return", "journey.goal_reached"]
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+
+  deliveries      WebhookDelivery[]
+
+  @@index([organizationId])
+}
+
+model WebhookDelivery {
+  id          String          @id @default(uuid())
+  endpointId  String
+  endpoint    WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  eventName   String
+  payload     Json
+  statusCode  Int?
+  response    String?         @db.Text
+  attempt     Int             @default(1)
+  deliveredAt DateTime        @default(now())
+
+  @@index([endpointId, deliveredAt])
+}
+
+model ApiKey {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name            String
+  keyPrefix       String        // e.g. "atk_live_"
+  keyHash         String        @unique
+  scopes          String[]
+  expiresAt       DateTime?
+  lastUsedAt      DateTime?
+  createdAt       DateTime      @default(now())
+
+  @@index([organizationId])
+}
