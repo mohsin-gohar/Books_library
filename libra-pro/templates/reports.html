@@ -3,8 +3,8 @@
 {% block content %}
 <div class="mb-8"><h1 class="text-4xl font-bold gradient-text">Reports & Exports</h1><p class="text-slate-400">Download data and view analytics</p></div>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <a href="{{ url_for('print_overdue') }}" class="glass rounded-2xl p-8 text-center hover:bg-indigo-500/10 transition"><i class="fas fa-file-pdf text-4xl text-red-400 mb-4"></i><h3 class="text-xl font-semibold">Overdue PDF</h3><p class="text-slate-400 text-sm mt-2">Download overdue report as PDF</p></a>
     <a href="{{ url_for('export_books') }}" class="glass rounded-2xl p-8 text-center hover:bg-indigo-500/10 transition"><i class="fas fa-file-csv text-4xl text-indigo-400 mb-4"></i><h3 class="text-xl font-semibold">Export Books</h3><p class="text-slate-400 text-sm mt-2">Download CSV of all books</p></a>
     <a href="{{ url_for('export_transactions') }}" class="glass rounded-2xl p-8 text-center hover:bg-indigo-500/10 transition"><i class="fas fa-file-csv text-4xl text-emerald-400 mb-4"></i><h3 class="text-xl font-semibold">Export Transactions</h3><p class="text-slate-400 text-sm mt-2">Download CSV of all transactions</p></a>
-    <a href="{{ url_for('overdue') }}" class="glass rounded-2xl p-8 text-center hover:bg-indigo-500/10 transition"><i class="fas fa-exclamation-triangle text-4xl text-amber-400 mb-4"></i><h3 class="text-xl font-semibold">Overdue Report</h3><p class="text-slate-400 text-sm mt-2">View late returns</p></a>
 </div>
 {% endblock %}
